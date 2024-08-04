@@ -8,7 +8,8 @@ import pydealer.tools
 import random
 random.seed(13453)
 class Game:
-    def __init__(self) -> None:
+    
+    def __init__(self) -> None:        
         self.OPEN = 'open'
         self.DECK = 'deck'
         #shuffle deck
@@ -84,50 +85,84 @@ class Game:
             raise LookupError
         c = self.hands[player].get(str(card))
         self.openCards.add(c)
+        
+        # change playerTurn
+        self.playerTurn = (self.playerTurn+1)%2
+        
         return c
     
     def checkMeld(self,meld:Stack):
         #if meld size is less than 3 it is invalid
-        if meld.size <3:
-            return 0 #0 means invalid
+        if meld.size <3: return 0 #0 means invalid
         #sort cards
         meld.sort()
         #get the different suits in the meld
         suits = set()
         for c in meld:
-            suits.add(c.suit)   
-        #convert card values to numbers from 1 to 13 (2 to Ace)
-        meldVals = [DEFAULT_RANKS["values"][c.value] for c in meld]
+            suits.add(c.suit)  
+             
+        #check if meld is first life, second life, or set in that order
+        
         def checkFirstLife():
             #if there is only 1 suit check if it is a first life
             if len(suits)==1:
-                def checkSeq():
-                    for i in range(0,len(meldVals)-1):
-                        if not meldVals[i]+1 == meldVals[i+1]:
+                #convert card values to numbers from 1 to 13 (2 to Ace)
+                meldVals = [DEFAULT_RANKS["values"][c.value] for c in meld]
+                meldVals.sort()
+                
+                def checkSeq(vals):
+                    mVals = vals.copy()
+                    val = mVals[0]
+                    for i in mVals:
+                        if val!=i:
                             return False
+                        else:
+                            val+=1
                     return True
-                return checkSeq()
+                # Set Ace value to 0 for Ace-2-3 sequences
+                meldVals2 = [i if i!=13 else 0 for i in meldVals]
+                meldVals2.sort()
+                #if either Ace being 0 or 13 makes a valid sequence then return True
+                return checkSeq(meldVals) or checkSeq(meldVals2)
         if checkFirstLife(): return 1
         
         def checkSecondLife():
             meld2 = Stack()
             meld2.add(meld)
-            suits2 = set()
             
             #check how many jokers there are
             j = meld2.get(self.joker.value)
-            meldVals = [DEFAULT_RANKS["values"][c.value] for c in meld2]
             
+            # if meld is empty and there are 3 or more jokers return True
+            if meld2.size==0 and len(j)>=3: return True
+            meldVals = [DEFAULT_RANKS["values"][c.value] for c in meld2]
             #If there is more than 1 suit in the non joker cards return false
+            suits2 = set()
             for c in meld2:
                 suits2.add(c.suit)
             if len(suits2)>1: return False
             #check if it is second life
-            def checkSeqWJoker():
+            def checkSeqWJoker(vals):
                 numJokers = len(j)
-                return False
+                mVals = vals.copy()
+                val = mVals[0]
+                while len(mVals)>0:
+                    if val == mVals[0]:
+                        mVals.pop(0)
+                        if len(mVals)==0:
+                            return True
+                    else:
+                        if numJokers==0: return False
+                        numJokers-=1
+                    val+=1
+                return True
             
-            return checkSeqWJoker()
+            #set value of Ace to be 0 for Ace-2-3 sequences
+            meldVals2 = [i if i!=13 else 0 for i in meldVals]
+            meldVals2.sort()
+            
+            #if either Ace being 0 or 13 makes a valid sequence then return True
+            return checkSeqWJoker(meldVals) or checkSeqWJoker(meldVals2)
         if checkSecondLife(): return 2
         
         def checkSet():
@@ -146,7 +181,24 @@ class Game:
             
             
             return True
-        if checkSet():
-            return 3
+        if checkSet(): return 3
         
+        # if meld is none of the above return 0
         return 0
+
+    def checkShow(self,melds:list):
+        # if total number of cards is not 13 return false
+        if sum([m.size for m in melds]) != 13:
+            return False
+        
+        # get a list of meld types (first, second, or set)
+        l = []
+        for meld in melds:
+            meldVal = self.checkMeld(meld)
+            if meldVal ==0:
+                return False
+            l.append(meldVal)
+        if 1 not in l: return False
+        if 3 in l and l.count(1)+l.count(2)<2: return False
+        return True
+    
