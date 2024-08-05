@@ -1,10 +1,4 @@
-import pydealer
-from pydealer import (Stack,Deck,Card)
-import pydealer.card
-from pydealer.const import (DEFAULT_RANKS)
-import pydealer.stack
-import pydealer.tools
-
+from pydealer import *
 import random
 random.seed(13453)
 class Game:
@@ -13,7 +7,7 @@ class Game:
         self.OPEN = 'open'
         self.DECK = 'deck'
         #shuffle deck
-        self.deck = pydealer.Deck()
+        self.deck = Deck()
         self.deck.shuffle()
         
         #deal hands

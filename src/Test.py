@@ -1,7 +1,6 @@
 from pydealer import *
 from Game import Game
-import random
-random.seed(13453)
+
 game = Game()
 h:Stack = game.hands[0]
 h.sort()
